@@ -6,27 +6,37 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
 libp2p = { version = ">=0.55.0", features = [
-    "tokio",
+    "dns",
+    "kad",
     "gossipsub",
+    "macros",
     "mdns",
     "noise",
-    "macros",
-    "tcp",
-    "tls",
-    "yamux",
-    "quic",
-    "ping",
     "identify",
+    "ping",
     "relay",
-    "upnp",
-    "rendezvous",
     "pnet",
+    "quic",
     "relay",
-    "kad",
+    "rendezvous",
+    "rsa",
+    "tcp",
+    "tokio",
+    "upnp",
+    "yamux",
+    # "allow-block-list",
+    # "connection-limits",
+    "memory-connection-limits",
+    "dcutr",
+    "autonat",
+    "serde",
 ] }
+either = "1.12"
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0.48"
+serde_json = "1.0"
+serde_yaml = "0.9"
 futures = { version = ">=0.3" }
 tokio = { version = "1.44", features = ["full"] }
 pnet = "0.35.0"
 tun = { version = "0.7.17", features = ["async"] }
+rand = "0.9"
