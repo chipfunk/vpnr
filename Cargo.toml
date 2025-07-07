@@ -38,5 +38,5 @@ serde_yaml = "0.9"
 futures = { version = ">=0.3" }
 tokio = { version = "1.45", features = ["full"] }
 pnet = "0.35.0"
-tun = { version = "0.8.2", features = ["async"] }
+tun = { version = "0.8.3", features = ["async"] }
 rand = "0.9"
