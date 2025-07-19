@@ -1,6 +1,5 @@
 use clap::{Parser, Subcommand};
 use std::net::IpAddr;
-use std::path::PathBuf;
 
 #[derive(Parser, Debug, Clone)]
 #[clap(name = "vpnr CLI arguments")]
@@ -13,7 +12,7 @@ pub struct CliArgs {
 pub enum Commands {
     GenerateKey {
         /// The filename to output the pre-shared key to
-        keyfile: Option<PathBuf>,
+        keyfile: Option<String>,
     },
     Start {
         #[clap(long)]
@@ -21,9 +20,13 @@ pub enum Commands {
         /// The network-interface to use
         #[clap(long)]
         interface_name: Option<String>,
+        #[clap(long)]
+        listen_addr: Option<IpAddr>,
+        #[clap(long)]
+        listen_port: Option<u16>,
         /// The file to load pre-shared key from
         #[clap(long)]
-        keyfile: Option<PathBuf>,
+        keyfile: Option<String>,
         /// Enable DHT
         #[clap(long)]
         enable_dht: Option<bool>,

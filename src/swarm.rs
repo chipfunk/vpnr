@@ -1,29 +1,32 @@
+use futures::StreamExt;
 use libp2p::{
-    Swarm, Transport, allow_block_list, autonat,
-    connection_limits::{self, ConnectionLimits},
+    Multiaddr, Swarm, Transport, allow_block_list,
+    autonat::{self},
+    connection_limits,
     core::upgrade::Version,
     dcutr, identify,
     identity::Keypair,
-    kad, mdns, memory_connection_limits, noise, ping,
+    kad, mdns, memory_connection_limits,
+    multiaddr::Protocol,
+    noise, ping,
     pnet::{PnetConfig, PreSharedKey},
     relay,
-    swarm::behaviour::toggle::Toggle,
+    swarm::{SwarmEvent, behaviour::toggle::Toggle},
     tcp, upnp, yamux,
 };
 use std::error::Error;
 use std::time::Duration;
+use tokio::process;
+use tracing::{info, trace};
 
-use crate::{VpnBehaviour, config::discovery::Discovery, vpn};
+use crate::{VpnBehaviour, VpnBehaviourEvent, config::Config, vpn};
 
 pub(crate) fn build(
     keypair: &Keypair,
     psk: PreSharedKey,
-    discovery: Discovery,
-    enable_relay: bool,
-    connection_limits: ConnectionLimits,
-    memory_limit: usize,
+    config: Config,
 ) -> Result<Swarm<VpnBehaviour>, Box<dyn Error>> {
-    let swarm = libp2p::SwarmBuilder::with_existing_identity(keypair.clone())
+    let mut swarm = libp2p::SwarmBuilder::with_existing_identity(keypair.clone())
         .with_tokio()
         .with_tcp(
             tcp::Config::default().nodelay(true),
@@ -44,20 +47,21 @@ pub(crate) fn build(
         .with_dns()?
         .with_behaviour(|keypair| VpnBehaviour {
             blocked_peers: allow_block_list::Behaviour::default(),
-            connection_limits: connection_limits::Behaviour::new(connection_limits),
-            memory_limits: memory_connection_limits::Behaviour::with_max_bytes(memory_limit),
+            connection_limits: connection_limits::Behaviour::new(config.connection_limits.into()),
+            memory_limits: memory_connection_limits::Behaviour::with_max_bytes(config.memory_limit),
 
-            ping: ping::Behaviour::default(),
+            // Toggle::from(Some(ping::Behaviour::default())),
+            ping: Toggle::from(None),
 
             identify: identify::Behaviour::new(identify::Config::new(
                 identify::PROTOCOL_NAME.to_string(),
                 keypair.public(),
             )),
 
-            autonat: Toggle::from(match discovery.autonat {
+            autonat: Toggle::from(match config.discovery.autonat {
                 true => Some(autonat::Behaviour::new(
                     keypair.public().to_peer_id(),
-                    autonat::Config::default(),
+                    config.autonat.into(),
                 )),
                 false => {
                     println!("Not using autonat ...");
@@ -65,7 +69,7 @@ pub(crate) fn build(
                 }
             }),
 
-            dcutr: Toggle::from(match discovery.dcutr {
+            dcutr: Toggle::from(match config.discovery.dcutr {
                 true => Some(dcutr::Behaviour::new(keypair.public().to_peer_id())),
                 false => {
                     println!("Not using dcutr ...");
@@ -73,7 +77,7 @@ pub(crate) fn build(
                 }
             }),
 
-            mdns: Toggle::from(match discovery.mdns {
+            mdns: Toggle::from(match config.discovery.mdns {
                 true => match mdns::tokio::Behaviour::new(
                     mdns::Config {
                         ttl: Duration::from_secs(6 * 60),
@@ -94,7 +98,7 @@ pub(crate) fn build(
                 }
             }),
 
-            upnp: Toggle::from(match discovery.upnp {
+            upnp: Toggle::from(match config.discovery.upnp {
                 true => Some(upnp::tokio::Behaviour::default()),
                 false => {
                     println!("Not using UPnP ...");
@@ -102,7 +106,7 @@ pub(crate) fn build(
                 }
             }),
 
-            kademlia: Toggle::from(match discovery.dht {
+            kademlia: Toggle::from(match config.discovery.dht {
                 true => Some(kad::Behaviour::with_config(
                     keypair.public().to_peer_id(),
                     kad::store::MemoryStore::new(keypair.public().to_peer_id()),
@@ -114,7 +118,7 @@ pub(crate) fn build(
                 }
             }),
 
-            relay: Toggle::from(match enable_relay {
+            relay: Toggle::from(match config.enable_relay {
                 true => Some(relay::Behaviour::new(
                     keypair.public().to_peer_id(),
                     relay::Config::default(),
@@ -129,5 +133,115 @@ pub(crate) fn build(
         .with_swarm_config(|cfg| cfg.with_idle_connection_timeout(Duration::from_secs(u64::MAX)))
         .build();
 
+    let mut listen_tcp = Multiaddr::from(config.listen_addr);
+    listen_tcp.push(Protocol::Tcp(config.listen_port));
+    info!("Listening on interface {}", listen_tcp);
+    swarm.listen_on(listen_tcp)?;
+
+    let mut listen_udp = Multiaddr::from(config.listen_addr);
+    listen_udp.push(Protocol::Udp(config.listen_port));
+    listen_udp.push(Protocol::QuicV1);
+    info!("Listening on interface {}", listen_udp);
+    swarm.listen_on(listen_udp)?;
+
+    for address in config.bootstrap {
+        swarm.dial(address)?;
+    }
+
     Ok(swarm)
+}
+
+pub async fn run(mut swarm: Swarm<VpnBehaviour>) -> Result<(), Box<dyn Error>> {
+    // Kick it off
+    loop {
+        tokio::select! {
+            event = swarm.select_next_some() => match event {
+
+                SwarmEvent::Behaviour(VpnBehaviourEvent::Identify(identify::Event::Received { connection_id, peer_id, info })) => {
+                    trace!("identify::Event::Received, received, {},{}, {:?}", connection_id, peer_id, info);
+                    for address in info.listen_addrs {
+                        trace!("{}", address);
+                        swarm.add_peer_address(peer_id, address.clone());
+                    }
+
+                    for protocol in info.protocols {
+                        trace!("{}", protocol);
+                    }
+                }
+
+
+                SwarmEvent::Behaviour(VpnBehaviourEvent::Upnp(upnp::Event::NewExternalAddr(address))) => {
+                    trace!("upnp::Event::NewExternalAddr, new external address: {}", address);
+                    // if swarm.behaviour_mut().kademlia.is_enabled() {
+                    //     swarm.behaviour_mut().kademlia.as_mut().unwrap().add_address(&local_peer_id, address);
+                    // }
+                    swarm.add_external_address(address);
+                }
+
+                SwarmEvent::Behaviour(VpnBehaviourEvent::Kademlia(kad::Event::OutboundQueryProgressed { id, result, stats, step })) => {
+                    trace!("kad::Event::OutboundQueryProgressed, {:?}, {:?}, {:?}, {:?}", id, result, stats, step);
+
+                    match result {
+                        kad::QueryResult::Bootstrap(result) => match result {
+                            Ok(result) => {
+                                trace!("{:?}", result);
+                                swarm.behaviour_mut().kademlia.as_mut().unwrap().get_closest_peers(result.peer);
+                            },
+                            Err(e) => trace!("{}", e),
+                        },
+                        kad::QueryResult::GetClosestPeers(result) => match result {
+                            Ok(result) => {
+                                for peer in result.peers {
+                                    for address in peer.addrs {
+                                        // swarm.add_peer_address(peer.peer_id, address);
+                                    }
+                                }
+                            },
+                            Err(e) => trace!("{}", e),
+                        },
+                        kad::QueryResult::GetProviders(result) => match result {
+                            Ok(result) => {
+                                trace!("{:?}", result);
+                            },
+                            Err(e) => trace!("{}", e),
+                        },
+                        kad::QueryResult::StartProviding(result) =>  match result {
+                            Ok(result) => {
+                                trace!("{:?}", result);
+                            },
+                            Err(e) => trace!("{}", e),
+                        },
+                        kad::QueryResult::RepublishProvider(result) => match result {
+                            Ok(result) => {
+                                trace!("{:?}", result);
+                            },
+                            Err(e) => trace!("{}", e),
+                        },
+                        kad::QueryResult::GetRecord(result) => match result {
+                            Ok(result) => {
+                                trace!("{:?}", result);
+                            },
+                            Err(e) => trace!("{}", e),
+                        },
+                        kad::QueryResult::PutRecord(result) => match result {
+                            Ok(result) => {
+                                trace!("{:?}", result);
+                            },
+                            Err(e) => trace!("{}", e),
+                        },
+                        kad::QueryResult::RepublishRecord(result) => match result {
+                            Ok(result) => {
+                                trace!("{:?}", result);
+                            },
+                            Err(e) => trace!("{}", e),
+                        },
+                    }
+                }
+
+                _ => {
+                    trace!("{:?}.", event);
+                }
+            }
+        }
+    }
 }

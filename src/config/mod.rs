@@ -1,10 +1,10 @@
 use crate::cli::{CliArgs, Commands};
+use autonat::Autonat;
 use connection_limits::ConnectionLimits;
 use discovery::Discovery;
 use libp2p::Multiaddr;
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
-use std::path::PathBuf;
 use std::str::FromStr;
 use std::vec::Vec;
 
@@ -15,26 +15,32 @@ pub mod discovery;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub ip_addr: IpAddr,
+    pub listen_addr: IpAddr,
+    pub listen_port: u16,
     pub interface_name: String,
-    pub keyfile: PathBuf,
+    pub keyfile: String,
     pub discovery: Discovery,
     pub connection_limits: ConnectionLimits,
     pub memory_limit: usize,
-    pub relay: bool,
+    pub enable_relay: bool,
     pub bootstrap: Vec<Multiaddr>,
+    pub autonat: Autonat,
 }
 
 impl Default for Config {
     fn default() -> Self {
         let mut config = Config {
             ip_addr: "10.0.0.1".parse().unwrap(),
+            listen_addr: "0.0.0.0".parse().unwrap(),
+            listen_port: 0,
             interface_name: String::from("vpnr0"),
-            keyfile: PathBuf::from("vpnr.ed25519"),
+            keyfile: String::from("vpnr.ed25519"),
             discovery: Discovery::default(),
             connection_limits: ConnectionLimits::default(),
             memory_limit: 128,
-            relay: false,
+            enable_relay: false,
             bootstrap: vec![],
+            autonat: Autonat::default(),
         };
 
         for addr in [
@@ -74,6 +80,8 @@ impl From<CliArgs> for Config {
             Commands::Start {
                 ip_addr,
                 interface_name,
+                listen_addr,
+                listen_port,
                 keyfile,
                 enable_dht,
                 enable_mdns,
@@ -90,6 +98,16 @@ impl From<CliArgs> for Config {
                 config.interface_name = match interface_name {
                     Some(arg) => arg,
                     _ => config.interface_name,
+                };
+
+                config.listen_addr = match listen_addr {
+                    Some(arg) => arg,
+                    _ => config.listen_addr,
+                };
+
+                config.listen_port = match listen_port {
+                    Some(arg) => arg,
+                    _ => config.listen_port,
                 };
 
                 config.keyfile = match keyfile {
@@ -122,9 +140,9 @@ impl From<CliArgs> for Config {
                     _ => config.discovery.autonat,
                 };
 
-                config.relay = match enable_relay {
+                config.enable_relay = match enable_relay {
                     Some(arg) => arg,
-                    _ => config.relay,
+                    _ => config.enable_relay,
                 };
             }
         }
