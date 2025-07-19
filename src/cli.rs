@@ -24,8 +24,8 @@ pub enum Commands {
         listen_addr: Option<IpAddr>,
         #[clap(long)]
         listen_port: Option<u16>,
-        /// The file to load pre-shared key from
-        #[clap(long)]
+        /// The file containing the private-key
+        #[clap(long, default_value = "vpnr_ed25519")]
         keyfile: Option<String>,
         /// Enable DHT
         #[clap(long)]

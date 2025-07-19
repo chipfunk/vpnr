@@ -34,7 +34,7 @@ impl Default for Config {
             listen_addr: "0.0.0.0".parse().unwrap(),
             listen_port: 0,
             interface_name: String::from("vpnr0"),
-            keyfile: String::from("vpnr.ed25519"),
+            keyfile: String::from("vpnr_ed25519"),
             discovery: Discovery::default(),
             connection_limits: ConnectionLimits::default(),
             memory_limit: 128,
