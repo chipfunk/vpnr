@@ -24,8 +24,6 @@ libp2p = { version = ">=0.55.0", features = [
     "tokio",
     "upnp",
     "yamux",
-    # "allow-block-list",
-    # "connection-limits",
     "memory-connection-limits",
     "dcutr",
     "autonat",
