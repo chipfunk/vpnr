@@ -1,6 +1,6 @@
 # vpnr
 
-A P2P VPN based on libp2p, using the p2p-connectivity of (libp2p)[https://www.libp2p.io/] to setup a secure channel utilizing wireguard-proctol.
+A P2P VPN based on libp2p, using the p2p-connectivity of [libp2p](https://www.libp2p.io/) to setup a secure channel utilizing wireguard-proctol.
 
 
 ## Generate private key
