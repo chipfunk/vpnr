@@ -42,3 +42,4 @@ tun = { version = "0.8.3", features = ["async"] }
 rand = "0.9"
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
+boringtun = { git = "https://github.com/cloudflare/boringtun.git", version = "0.6.0" }
