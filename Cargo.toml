@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
-libp2p = { version = ">=0.55.0", features = [
+libp2p = { version = ">=0.56.0", features = [
     "dns",
     "kad",
     "gossipsub",
@@ -29,15 +29,15 @@ libp2p = { version = ">=0.55.0", features = [
     "autonat",
     "serde",
 ] }
-either = "1.12"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-serde_yaml = "0.9"
+either = ">=1.15"
+serde = { version = ">=1.0", features = ["derive"] }
+serde_json = ">=1.0"
+serde_yaml = ">=0.9"
 futures = { version = ">=0.3" }
-tokio = { version = "1.46", features = ["full"] }
-pnet = "0.35.0"
-tun = { version = "0.8.3", features = ["async"] }
-rand = "0.9"
-tracing = "0.1.41"
-tracing-subscriber = "0.3.19"
-boringtun = { git = "https://github.com/cloudflare/boringtun.git", version = "0.6.0" }
+tokio = { version = ">=1.46", features = ["full"] }
+pnet = ">=0.35"
+tun = { version = ">=0.8", features = ["async"] }
+rand = ">=0.9"
+tracing = ">=0.1"
+tracing-subscriber = ">=0.3"
+boringtun = { git = "https://github.com/cloudflare/boringtun.git", version = ">=0.6" }
