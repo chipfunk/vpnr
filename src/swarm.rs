@@ -8,7 +8,7 @@ use libp2p::{
     identity::Keypair,
     kad, mdns, memory_connection_limits,
     multiaddr::Protocol,
-    noise, ping,
+    noise,
     pnet::{PnetConfig, PreSharedKey},
     relay,
     swarm::{SwarmEvent, behaviour::toggle::Toggle},
@@ -16,7 +16,6 @@ use libp2p::{
 };
 use std::error::Error;
 use std::time::Duration;
-use tokio::process;
 use tracing::{info, trace};
 
 use crate::{VpnBehaviour, VpnBehaviourEvent, config::Config, vpn};
@@ -53,10 +52,16 @@ pub(crate) fn build(
             // Toggle::from(Some(ping::Behaviour::default())),
             ping: Toggle::from(None),
 
-            identify: identify::Behaviour::new(identify::Config::new(
-                identify::PROTOCOL_NAME.to_string(),
-                keypair.public(),
-            )),
+            identify: Toggle::from(match config.discovery.identify {
+                true => Some(identify::Behaviour::new(identify::Config::new(
+                    identify::PROTOCOL_NAME.to_string(),
+                    keypair.public(),
+                ))),
+                false => {
+                    println!("Not using identify ...");
+                    None
+                }
+            }),
 
             autonat: Toggle::from(match config.discovery.autonat {
                 true => Some(autonat::Behaviour::new(
@@ -88,7 +93,7 @@ pub(crate) fn build(
                 ) {
                     Ok(mdns) => Some(mdns),
                     Err(e) => {
-                        println!("Error initializing mDNS, {}", e);
+                        println!("Error initializing mDNS, {e}");
                         None
                     }
                 },

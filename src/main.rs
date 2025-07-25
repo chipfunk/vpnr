@@ -3,7 +3,6 @@
 use clap::Parser;
 use cli::Commands;
 use config::Config;
-use futures::stream::StreamExt;
 use libp2p::{
     PeerId,
     allow_block_list::{self, BlockedPeers},
@@ -14,7 +13,7 @@ use libp2p::{
     kad, mdns, memory_connection_limits, ping,
     pnet::PreSharedKey,
     relay,
-    swarm::{NetworkBehaviour, SwarmEvent, behaviour::toggle::Toggle},
+    swarm::{NetworkBehaviour, behaviour::toggle::Toggle},
     upnp,
 };
 use std::{
@@ -29,9 +28,7 @@ use std::{
 use tokio::{
     fs::File,
     io::{AsyncReadExt, AsyncWriteExt},
-    select,
 };
-use tracing::trace;
 
 mod cli;
 pub mod config;
@@ -40,18 +37,18 @@ mod vpn;
 
 #[derive(NetworkBehaviour)]
 struct VpnBehaviour {
+    vpn: vpn::behaviour::Behaviour,
     dcutr: Toggle<dcutr::Behaviour>,
     autonat: Toggle<autonat::Behaviour>,
     blocked_peers: allow_block_list::Behaviour<BlockedPeers>,
     connection_limits: connection_limits::Behaviour,
     memory_limits: memory_connection_limits::Behaviour,
-    identify: identify::Behaviour,
+    identify: Toggle<identify::Behaviour>,
     ping: Toggle<ping::Behaviour>,
     kademlia: Toggle<kad::Behaviour<kad::store::MemoryStore>>,
     mdns: Toggle<mdns::tokio::Behaviour>,
     relay: Toggle<relay::Behaviour>,
     upnp: Toggle<upnp::tokio::Behaviour>,
-    vpn: vpn::behaviour::Behaviour,
 }
 
 fn read_keyfile(keyfile: PathBuf) -> Result<Vec<u8>, std::io::Error> {
@@ -78,7 +75,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             let mut psk_file = File::create(config.keyfile).await?;
 
-            psk_file.write_all(format!("{}", psk).as_bytes()).await?;
+            psk_file.write_all(format!("{psk}").as_bytes()).await?;
             psk_file.flush().await?;
 
             Ok(())
@@ -95,6 +92,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             enable_relay: _,
             enable_dcutr: _,
             enable_autonat: _,
+            enable_identify: _,
         } => {
             let config = Config::from(args);
             println!("{}", serde_yaml::to_string(&config)?);
@@ -126,7 +124,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let mut swarm = match swarm::build(&local_keypair, pre_shared_key, config.clone()) {
                 Ok(swarm) => swarm,
                 Err(e) => {
-                    panic!("Error building swarm, {}", e)
+                    panic!("Error building swarm, {e}")
                 }
             };
 

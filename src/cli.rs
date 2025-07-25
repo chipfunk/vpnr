@@ -27,20 +27,25 @@ pub enum Commands {
         /// The file containing the private-key
         #[clap(long, default_value = "vpnr_ed25519")]
         keyfile: Option<String>,
-        /// Enable DHT
+        /// Enable libp2p::identify
+        #[clap(long)]
+        enable_identify: Option<bool>,
+        /// Enable libp2p::DHT
         #[clap(long)]
         enable_dht: Option<bool>,
-        /// Enable mDNS
+        /// Enable libp2p::mDNS
         #[clap(long)]
         enable_mdns: Option<bool>,
-        /// Enable UPnP
+        /// Enable libp2p::UPnP
         #[clap(long)]
         enable_upnp: Option<bool>,
-        /// Enable relaying
+        /// Enable libp2p::relaying
         #[clap(long)]
         enable_relay: Option<bool>,
+        /// Enable libp2p::dcutr
         #[clap(long)]
         enable_dcutr: Option<bool>,
+        /// Enable libp2p::autonat
         #[clap(long)]
         enable_autonat: Option<bool>,
     },

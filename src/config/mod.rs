@@ -89,6 +89,7 @@ impl From<CliArgs> for Config {
                 enable_relay,
                 enable_dcutr,
                 enable_autonat,
+                enable_identify,
             } => {
                 config.ip_addr = match ip_addr {
                     Some(arg) => arg,
@@ -138,6 +139,11 @@ impl From<CliArgs> for Config {
                 config.discovery.autonat = match enable_autonat {
                     Some(arg) => arg,
                     _ => config.discovery.autonat,
+                };
+
+                config.discovery.identify = match enable_identify {
+                    Some(arg) => arg,
+                    _ => config.discovery.identify,
                 };
 
                 config.enable_relay = match enable_relay {
