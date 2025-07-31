@@ -96,7 +96,7 @@ Default value: empty
 
 #### Relaying
 
-When relaying a connection between two different ndoes on the network, the traffic between these nodes is going through your connections to both of them.
+When relaying a connection between two different ndoes on the network, the traffic between these nodes passes through your connections to them.
 
 If you want to enable this feature use
 
@@ -108,7 +108,7 @@ Default value: false
 
 #### Dcutr / Direct-connection-upgrade-through-relay
 
-	--enable-dht=true
+	--enable-dcutr=true
 
 
 Default value: false
@@ -116,7 +116,7 @@ Default value: false
 
 #### Auto-NAT / Hole-punching
 
-	--enable-dht=true
+	--enable-autonat=true
 
 
 Default value: false
@@ -124,17 +124,28 @@ Default value: false
 
 ## Containeraization
 
-Build container using
+Good news first: it is possible to operate the service in a containerized environment :).
+
+
+### Build container
 
 	podman build -t chipfunk/vpnr:latest .
 
 
-Run container to generate private-key
+### Generate private-key
 
 	podman run --mount type=bind,src=$(pwd),target=/vpnr,z chipfunk/vpnr:latest generate-key /vpnr/YOUR_PRIVATE_KEY_FILE
 
 
-Run service
+### Run service
 
-	export VPNR_LISTEN_PORT=59123
-	podman run -p $VPNR_LISTEN_PORT:$VPNR_LISTEN_PORT/tcp -p $VPNR_LISTEN_PORT:$VPN_LISTEN_PORT/udp --mount type=bind,src=$(pwd),target=/vpnr,z chipfunk/vpnr:latest start --keyfile=/vpnr/YOUR_PRIVATE_KEY_FILE --listen-port $VPNR_LISTEN_PORT
+To successfully expose the VPN-service to a network, the service has to have a specific port-number assigned before starting the container.
+
+	export VPN_LISTEN_PORT=59123
+	podman run \
+		-p $VPN_LISTEN_PORT:$VPN_LISTEN_PORT/tcp \
+		-p $VPN_LISTEN_PORT:$VPN_LISTEN_PORT/udp \
+		--mount type=bind,src=$(pwd),target=/vpnr,z chipfunk/vpnr:latest \
+		start \
+		--keyfile=/vpnr/YOUR_PRIVATE_KEY_FILE \
+		--listen-port $VPN_LISTEN_PORT
