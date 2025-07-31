@@ -1,11 +1,18 @@
-# vpnr
+# vpnr (experimental)
 
-A P2P VPN based on libp2p, using the p2p-connectivity of [libp2p](https://www.libp2p.io/) to setup a secure channel utilizing [wireguard-proctol](https://www.wireguard.com/).
+A VPN based on [libp2p](https://www.libp2p.io/) and [wireguard-proctol](https://www.wireguard.com/).
+
+Use [libp2p](https://www.libp2p.io/) to discover and manage network-connections, setup a secure channel utilizing [wireguard-proctol](https://www.wireguard.com/), provide traffic on local TUN device.
+
+
+# IMPORTANT
+
+As i'm still progressing to get more familiar with [libp2p](https://www.libp2p.io/)'s network-stack, the project ONLY provides P2P-connectivity through [libp2p](https://www.libp2p.io/) currently.
 
 
 ## Installation
 
-	cargo build --release
+	cargo build
 
 
 ## Setup
@@ -23,7 +30,99 @@ This will generate a file `YOUR_PRIVATE_KEY_FILE` containing your private-key. K
    	vpnr start --keyfile YOUR_PRIVATE_KEY_FILE
 
 
-## Container
+## P2P
+
+In order to participate in a P2P-network network-connections to other participants must be made.
+
+
+
+### Discovery
+
+
+#### mDNS / Multicast-DNS / zeroconf
+
+Broadcast service-announcements via [mDNS](https://datatracker.ietf.org/doc/html/rfc6762) on local network
+
+	--enable-mdns=true
+
+
+Default value: false
+
+
+#### UPnP / Universal plug'n'play
+
+Manage automatic port-forwarding on router
+
+	--enable-upnp=true
+
+
+I have not seen my router deleting old forwarding-entries. In such a situation it can be a good idea to combine this option with a statically assigned IP-address and port.
+
+	--listen-addr SOME-IP-ADDRESS
+	--listen-port SOME-PORT-NUMBER
+
+
+Default value: false
+
+
+#### DHT / Kademlia
+
+Distributed-Hash-Table
+
+	--enable-dht=true
+
+
+Default value: false
+
+
+### Connectivity
+
+
+#### Interface
+
+You can bind this service to a specific network-device and port.
+
+	--listen-addr SOME-IP-ADDRESS
+	--listen-port SOME-PORT-NUMBER
+
+
+#### Bootstrapping
+
+	todo()
+
+
+Default value: empty
+
+
+#### Relaying
+
+When relaying a connection between two different ndoes on the network, the traffic between these nodes is going through your connections to both of them.
+
+If you want to enable this feature use
+
+	--enable-relay=true
+
+
+Default value: false
+
+
+#### Dcutr / Direct-connection-upgrade-through-relay
+
+	--enable-dht=true
+
+
+Default value: false
+
+
+#### Auto-NAT / Hole-punching
+
+	--enable-dht=true
+
+
+Default value: false
+
+
+## Containeraization
 
 Build container using
 
