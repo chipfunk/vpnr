@@ -27,52 +27,18 @@ This will generate a file `YOUR_PRIVATE_KEY_FILE` containing your private-key. K
 
 ## Run the service
 
+To start the service in listening-only mode, please run
+
    	vpnr start --keyfile YOUR_PRIVATE_KEY_FILE
+
+
+The VPN will be ready to accept incoming connections from other nodes, but it will NOT announce itself on the network nor will it open any connections.
 
 
 ## P2P
 
-In order to participate in a P2P-network network-connections to other participants must be made.
+In order to participate in a P2P-network connections to other participants must be made.
 
-
-
-### Discovery
-
-
-#### mDNS / Multicast-DNS / zeroconf
-
-Broadcast service-announcements via [mDNS](https://datatracker.ietf.org/doc/html/rfc6762) on local network
-
-	--enable-mdns=true
-
-
-Default value: false
-
-
-#### UPnP / Universal plug'n'play
-
-Manage automatic port-forwarding on router
-
-	--enable-upnp=true
-
-
-I have not seen my router deleting old forwarding-entries. In such a situation it can be a good idea to combine this option with a statically assigned IP-address and port.
-
-	--listen-addr SOME-IP-ADDRESS
-	--listen-port SOME-PORT-NUMBER
-
-
-Default value: false
-
-
-#### DHT / Kademlia
-
-Distributed-Hash-Table
-
-	--enable-dht=true
-
-
-Default value: false
 
 
 ### Connectivity
@@ -94,7 +60,9 @@ You can bind this service to a specific network-device and port.
 Default value: empty
 
 
-#### Relaying
+#### Relaying / TURN / Circuit Switching
+
+Spec: (https://github.com/libp2p/specs/blob/master/relay/circuit-v1.md)
 
 When relaying a connection between two different ndoes on the network, the traffic between these nodes passes through your connections to them.
 
@@ -106,7 +74,9 @@ If you want to enable this feature use
 Default value: false
 
 
-#### Dcutr / Direct-connection-upgrade-through-relay
+#### DCUtR / Direct-connection-upgrade-through-relay
+
+Spec: (https://github.com/libp2p/specs/blob/master/relay/DCUtR.md)
 
 	--enable-dcutr=true
 
@@ -116,7 +86,55 @@ Default value: false
 
 #### Auto-NAT / Hole-punching
 
+Spec: (https://github.com/libp2p/specs/blob/master/autonat/autonat-v1.md)
+
 	--enable-autonat=true
+
+
+Default value: false
+
+
+### Discovery
+
+
+#### mDNS / Multicast-DNS / zeroconf
+
+Spec: (https://github.com/libp2p/specs/blob/master/discovery/mdns.md)
+
+Broadcast service-announcements via [mDNS](https://datatracker.ietf.org/doc/html/rfc6762) on local network
+
+	--enable-mdns=true
+
+
+Default value: false
+
+
+#### UPnP / Universal plug'n'play
+
+Manage port-mapping on router automatically.
+
+	--enable-upnp=true
+
+
+I have not seen my router deleting old forwarding-entries. In such a situation it can be a good idea to combine this option with a statically assigned IP-address and port.
+
+	--listen-addr SOME-IP-ADDRESS
+	--listen-port SOME-PORT-NUMBER
+
+
+Default value: false
+
+
+#### DHT / Kademlia
+
+Spec: (https://github.com/libp2p/specs/tree/master/kad-dht)
+
+The fingerprint of your identity-key will be made available on DHT. Should be fine, but i'm sure some would like to be aware.
+
+
+Enable distributed-hash-table
+
+	--enable-dht=true
 
 
 Default value: false
