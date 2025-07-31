@@ -58,7 +58,7 @@ impl Default for Config {
         ] {
             match Multiaddr::from_str(addr) {
                 Ok(addr) => config.bootstrap.push(addr),
-                Err(e) => println!("Error parsing configured multi-addr, {}, {}", addr, e),
+                Err(e) => println!("Error parsing configured multi-addr, {addr}, {e}"),
             }
         }
 

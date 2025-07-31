@@ -197,7 +197,7 @@ pub async fn run(mut swarm: Swarm<VpnBehaviour>) -> Result<(), Box<dyn Error>> {
                         kad::QueryResult::GetClosestPeers(result) => match result {
                             Ok(result) => {
                                 for peer in result.peers {
-                                    for address in peer.addrs {
+                                    for _address in peer.addrs {
                                         // swarm.add_peer_address(peer.peer_id, address);
                                     }
                                 }

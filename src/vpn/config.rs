@@ -1,8 +1,2 @@
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Config {}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {}
-    }
-}
