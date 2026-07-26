@@ -1,151 +1,40 @@
 services:
     vpnr_1:
         build: .
-        command:
-            - start
-            - --keyfile /run/secrets/private-key-1
-            - --ip-address 172.28.
+        command: start
+        environment:
+            - VPNR_IP_ADDRESS=172.28.5.1
+            - VPNR_PRIVATE_KEYFILE_PATH=/run/secrets/private-key-1
+            - VPNR_LISTEN_ADDR=0.0.0.0
+            - VPNR_LISTEN_PORT=4001
         volumes:
             - shared_storage:/data
-        configs:
-            - vpnr_1
         networks:
             - nodes
-        secrets:
-            - private-key-1
+
     vpnr_2:
         build: .
-        command: start --keyfile /run/secrets/private-key-2
+        command: start
+        environment:
+            - VPNR_IP_ADDRESS=172.28.5.2
+            - VPNR_PRIVATE_KEYFILE_PATH=/run/secrets/private-key-2
+            - VPNR_LISTEN_ADDR=0.0.0.0
+            - VPNR_LISTEN_PORT=4002
         volumes:
             - shared_storage:/data
-        configs:
-            - vpnr_2
         networks:
             - nodes
-        secrets:
-            - private-key-2
-
-configs:
-    vpnr_1:
-        content: |
-            ip_addr: 10.0.0.1
-            listen_addr: 0.0.0.0
-            listen_port: 0
-            interface_name: vpnr0
-            keyfile: vpnr_ed25519
-            discovery:
-                dht: false
-                mdns: true
-                upnp: false
-                dcutr: false
-                autonat: false
-                identify: false
-            connection_limits:
-                max_established_incoming: 1024
-                max_established_outgoing: 1024
-                max_established_per_peer: 4
-                max_established_total: 1024
-                max_pending_incoming: 1024
-                max_pending_outgoing: 1024
-            memory_limit: 128
-            enable_relay: false
-            bootstrap: []
-            autonat:
-                timeout:
-                    secs: 30
-                    nanos: 0
-                boot_delay:
-                    secs: 15
-                    nanos: 0
-                refresh_interval:
-                    secs: 900
-                    nanos: 0
-                retry_interval:
-                    secs: 90
-                    nanos: 0
-                throttle_server_period:
-                    secs: 90
-                    nanos: 0
-                    use_connected: true
-                    confidence_max: 3
-                    max_peer_addresses: 16
-                throttle_clients_global_max: 30
-                throttle_clients_peer_max: 3
-                throttle_clients_period:
-                    secs: 1
-                    nanos: 0
-                    only_global_ips: true
-    vpnr_2:
-        content: |
-            ip_addr: 10.0.0.2
-            listen_addr: 0.0.0.0
-            listen_port: 0
-            interface_name: vpnr0
-            keyfile: vpnr_ed25519
-            discovery:
-                dht: false
-                mdns: true
-                upnp: false
-                dcutr: false
-                autonat: false
-                identify: false
-            connection_limits:
-                max_established_incoming: 1024
-                max_established_outgoing: 1024
-                max_established_per_peer: 4
-                max_established_total: 1024
-                max_pending_incoming: 1024
-                max_pending_outgoing: 1024
-            memory_limit: 128
-            enable_relay: false
-            bootstrap: []
-            autonat:
-                timeout:
-                    secs: 30
-                    nanos: 0
-                boot_delay:
-                    secs: 15
-                    nanos: 0
-                refresh_interval:
-                    secs: 900
-                    nanos: 0
-                retry_interval:
-                    secs: 90
-                    nanos: 0
-                throttle_server_period:
-                    secs: 90
-                    nanos: 0
-                    use_connected: true
-                    confidence_max: 3
-                    max_peer_addresses: 16
-                throttle_clients_global_max: 30
-                throttle_clients_peer_max: 3
-                throttle_clients_period:
-                    secs: 1
-                    nanos: 0
-                    only_global_ips: true
-
-secrets:
-    private-key-1:
-        file: ./vpnr_1_ed25519
-    private-key-2:
-        file: ./vpnr_2_ed25519
 
 volumes:
     shared_storage: {}
 
 networks:
     nodes:
-        driver: default
+        driver: bridge
         internal: true
         enable_ipv4: true
-        enable_ipv6: true
+        enable_ipv6: false
         ipam:
             driver: default
             config:
                 - subnet: 172.28.0.0/16
-                  ip_range: 172.28.5.0/24
-                  aux_addresses:
-                      host1: 172.28.1.5
-                      host2: 172.28.1.6
-                      host3: 172.28.1.7

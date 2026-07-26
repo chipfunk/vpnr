@@ -10,9 +10,23 @@ Use [libp2p](https://www.libp2p.io/) to discover and manage network-connections,
 As i'm still progressing to get more familiar with [libp2p](https://www.libp2p.io/)'s network-stack, the project ONLY provides P2P-connectivity through [libp2p](https://www.libp2p.io/) currently.
 
 
+## BUILDING
+
+### Build executable
+
+	cargo build --release
+
+
+### Build container
+
+To build a container using podman:
+
+	podman build . -t chipfunk/vpnr:latest
+
+
 ## Installation
 
-	cargo build
+	cargo build --release
 
 
 ## Setup
@@ -33,6 +47,11 @@ To start the service in listening-only mode, please run
 
 
 The VPN will be ready to accept incoming connections from other nodes, but it will NOT announce itself on the network nor will it open any connections.
+
+
+## Run the service from container
+
+	podman run chipfunk/vpnr:latest
 
 
 ## P2P
