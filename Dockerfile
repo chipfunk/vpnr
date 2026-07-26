@@ -1,4 +1,4 @@
-FROM rust:bookworm AS BUILD
+FROM rust:trixie AS BUILD
 
 WORKDIR /app
 
@@ -11,11 +11,8 @@ RUN cargo build --release
 RUN strip -s target/release/vpnr
 
 
-FROM debian:bookworm AS RUN
+FROM debian:trixie AS RUN
 
 COPY --from=BUILD /app/target/release/vpnr /usr/local/bin/vpnr
-
-RUN mkdir /vpnr
-WORKDIR /vpnr
 
 ENTRYPOINT [ "/usr/local/bin/vpnr" ]
