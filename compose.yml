@@ -1,32 +1,45 @@
 services:
     vpnr_1:
-        build: .
-        command: start
+        image: chipfunk/vpnr:latest
+        command:
+            - start
         environment:
             - VPNR_IP_ADDRESS=172.28.5.1
-            - VPNR_PRIVATE_KEYFILE_PATH=/run/secrets/private-key-1
+            - VPNR_PRIVATE_KEYFILE_PATH=/run/secrets/vpnr_1
             - VPNR_LISTEN_ADDR=0.0.0.0
             - VPNR_LISTEN_PORT=4001
+        secrets:
+            - vpnr_1
         volumes:
-            - shared_storage:/data
+            - vpnr_1:/data
         networks:
             - nodes
 
     vpnr_2:
-        build: .
-        command: start
+        image: chipfunk/vpnr:latest
+        command:
+            - start
         environment:
             - VPNR_IP_ADDRESS=172.28.5.2
-            - VPNR_PRIVATE_KEYFILE_PATH=/run/secrets/private-key-2
+            - VPNR_PRIVATE_KEYFILE_PATH=/run/secrets/vpnr_2
             - VPNR_LISTEN_ADDR=0.0.0.0
             - VPNR_LISTEN_PORT=4002
+        secrets:
+            - vpnr_2
         volumes:
-            - shared_storage:/data
+            - vpnr_2:/data
         networks:
             - nodes
 
+secrets:
+    vpnr_1:
+        file: ./private-key-1.ed25519
+    vpnr_2:
+        file: ./private-key-2.ed25519
+
 volumes:
-    shared_storage: {}
+    vpnr_1: {}
+    vpnr_2: {}
 
 networks:
     nodes:

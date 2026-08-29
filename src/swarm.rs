@@ -1,72 +1,50 @@
 use futures::StreamExt;
 use libp2p::{
-    Multiaddr, Swarm, Transport, allow_block_list,
-    autonat::{self},
-    connection_limits,
-    core::upgrade::Version,
-    dcutr, identify,
+    Multiaddr, Swarm, allow_block_list, autonat, connection_limits, dcutr, identify,
     identity::Keypair,
     kad, mdns, memory_connection_limits,
     multiaddr::Protocol,
-    noise,
-    pnet::{PnetConfig, PreSharedKey},
-    relay,
+    noise, ping, relay,
     swarm::{SwarmEvent, behaviour::toggle::Toggle},
     tcp, upnp, yamux,
 };
-use std::error::Error;
 use std::time::Duration;
+use std::{error::Error, net::IpAddr};
 use tracing::{info, trace};
 
 use crate::{VpnBehaviour, VpnBehaviourEvent, config::Config, vpn};
 
 pub(crate) fn build(
     keypair: &Keypair,
-    psk: PreSharedKey,
+    listen_addr: IpAddr,
+    listen_port: u16,
     config: Config,
 ) -> Result<Swarm<VpnBehaviour>, Box<dyn Error>> {
     let mut swarm = libp2p::SwarmBuilder::with_existing_identity(keypair.clone())
         .with_tokio()
         .with_tcp(
-            tcp::Config::default().nodelay(true),
+            tcp::Config::default(),
             noise::Config::new,
             yamux::Config::default,
         )?
         .with_quic()
-        .with_other_transport(|key| {
-            let noise_config = noise::Config::new(key).unwrap();
-            let yamux_config = yamux::Config::default();
-            let psk_encrypted = tcp::tokio::Transport::new(tcp::Config::default().nodelay(true))
-                .and_then(move |socket, _| PnetConfig::new(psk).handshake(socket));
-            psk_encrypted
-                .upgrade(Version::V1)
-                .authenticate(noise_config)
-                .multiplex(yamux_config)
-        })?
         .with_dns()?
         .with_behaviour(|keypair| VpnBehaviour {
             blocked_peers: allow_block_list::Behaviour::default(),
             connection_limits: connection_limits::Behaviour::new(config.connection_limits.into()),
             memory_limits: memory_connection_limits::Behaviour::with_max_bytes(config.memory_limit),
 
-            // Toggle::from(Some(ping::Behaviour::default())),
-            ping: Toggle::from(None),
+            ping: ping::Behaviour::default(),
 
-            identify: Toggle::from(match config.discovery.identify {
-                true => Some(identify::Behaviour::new(identify::Config::new(
-                    identify::PROTOCOL_NAME.to_string(),
-                    keypair.public(),
-                ))),
-                false => {
-                    println!("Not using identify ...");
-                    None
-                }
-            }),
+            identify: identify::Behaviour::new(identify::Config::new(
+                identify::PROTOCOL_NAME.to_string(),
+                keypair.public(),
+            )),
 
-            autonat: Toggle::from(match config.discovery.autonat {
+            autonat: Toggle::from(match config.autonat.enabled {
                 true => Some(autonat::Behaviour::new(
                     keypair.public().to_peer_id(),
-                    config.autonat.into(),
+                    libp2p::autonat::Config::default(),
                 )),
                 false => {
                     println!("Not using autonat ...");
@@ -74,7 +52,7 @@ pub(crate) fn build(
                 }
             }),
 
-            dcutr: Toggle::from(match config.discovery.dcutr {
+            dcutr: Toggle::from(match config.dcutr.enabled {
                 true => Some(dcutr::Behaviour::new(keypair.public().to_peer_id())),
                 false => {
                     println!("Not using dcutr ...");
@@ -82,13 +60,9 @@ pub(crate) fn build(
                 }
             }),
 
-            mdns: Toggle::from(match config.discovery.mdns {
+            mdns: Toggle::from(match config.mdns.enabled {
                 true => match mdns::tokio::Behaviour::new(
-                    mdns::Config {
-                        ttl: Duration::from_secs(6 * 60),
-                        query_interval: Duration::from_secs(5 * 60),
-                        enable_ipv6: false,
-                    },
+                    config.mdns.into(),
                     keypair.public().to_peer_id(),
                 ) {
                     Ok(mdns) => Some(mdns),
@@ -103,7 +77,7 @@ pub(crate) fn build(
                 }
             }),
 
-            upnp: Toggle::from(match config.discovery.upnp {
+            upnp: Toggle::from(match config.upnp.enabled {
                 true => Some(upnp::tokio::Behaviour::default()),
                 false => {
                     println!("Not using UPnP ...");
@@ -111,7 +85,7 @@ pub(crate) fn build(
                 }
             }),
 
-            kademlia: Toggle::from(match config.discovery.dht {
+            kademlia: Toggle::from(match config.dht.enabled {
                 true => Some(kad::Behaviour::with_config(
                     keypair.public().to_peer_id(),
                     kad::store::MemoryStore::new(keypair.public().to_peer_id()),
@@ -123,7 +97,7 @@ pub(crate) fn build(
                 }
             }),
 
-            relay: Toggle::from(match config.enable_relay {
+            relay: Toggle::from(match config.relay.enabled {
                 true => Some(relay::Behaviour::new(
                     keypair.public().to_peer_id(),
                     relay::Config::default(),
@@ -138,13 +112,13 @@ pub(crate) fn build(
         .with_swarm_config(|cfg| cfg.with_idle_connection_timeout(Duration::from_secs(u64::MAX)))
         .build();
 
-    let mut listen_tcp = Multiaddr::from(config.listen_addr);
-    listen_tcp.push(Protocol::Tcp(config.listen_port));
+    let mut listen_tcp = Multiaddr::from(listen_addr);
+    listen_tcp.push(Protocol::Tcp(listen_port));
     info!("Listening on interface {}", listen_tcp);
     swarm.listen_on(listen_tcp)?;
 
-    let mut listen_udp = Multiaddr::from(config.listen_addr);
-    listen_udp.push(Protocol::Udp(config.listen_port));
+    let mut listen_udp = Multiaddr::from(listen_addr);
+    listen_udp.push(Protocol::Udp(listen_port));
     listen_udp.push(Protocol::QuicV1);
     info!("Listening on interface {}", listen_udp);
     swarm.listen_on(listen_udp)?;

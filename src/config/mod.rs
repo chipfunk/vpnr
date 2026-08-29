@@ -1,46 +1,41 @@
-use crate::cli::{CliArgs, Commands};
-use autonat::Autonat;
-use connection_limits::ConnectionLimits;
-use discovery::Discovery;
+pub(crate) mod autonat;
+pub(crate) mod connection_limits;
+pub(crate) mod dcutr;
+pub(crate) mod dht;
+pub(crate) mod mdns;
+pub(crate) mod relay;
+pub(crate) mod upnp;
+
 use libp2p::Multiaddr;
 use serde::{Deserialize, Serialize};
-use std::net::IpAddr;
 use std::str::FromStr;
 use std::vec::Vec;
 
-pub mod autonat;
-pub mod connection_limits;
-pub mod discovery;
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    pub ip_addr: IpAddr,
-    pub listen_addr: IpAddr,
-    pub listen_port: u16,
-    pub interface_name: String,
-    pub keyfile: String,
-    pub discovery: Discovery,
-    pub connection_limits: ConnectionLimits,
+    pub connection_limits: connection_limits::ConnectionLimits,
     pub memory_limit: usize,
-    pub enable_relay: bool,
     pub bootstrap: Vec<Multiaddr>,
-    pub autonat: Autonat,
+    pub autonat: autonat::Autonat,
+    pub dcutr: dcutr::Dcutr,
+    pub dht: dht::Dht,
+    pub mdns: mdns::Mdns,
+    pub relay: relay::Relay,
+    pub upnp: upnp::Upnp,
 }
 
 impl Default for Config {
     fn default() -> Self {
         let mut config = Config {
-            ip_addr: "10.0.0.1".parse().unwrap(),
-            listen_addr: "0.0.0.0".parse().unwrap(),
-            listen_port: 0,
-            interface_name: String::from("vpnr0"),
-            keyfile: String::from("vpnr_ed25519"),
-            discovery: Discovery::default(),
-            connection_limits: ConnectionLimits::default(),
+            connection_limits: connection_limits::ConnectionLimits::default(),
             memory_limit: 128,
-            enable_relay: false,
             bootstrap: vec![],
-            autonat: Autonat::default(),
+            autonat: autonat::Autonat::default(),
+            dht: dht::Dht::default(),
+            dcutr: dcutr::Dcutr::default(),
+            mdns: mdns::Mdns::default(),
+            relay: relay::Relay::default(),
+            upnp: upnp::Upnp::default(),
         };
 
         for addr in [
@@ -59,97 +54,6 @@ impl Default for Config {
             match Multiaddr::from_str(addr) {
                 Ok(addr) => config.bootstrap.push(addr),
                 Err(e) => println!("Error parsing configured multi-addr, {addr}, {e}"),
-            }
-        }
-
-        config
-    }
-}
-
-impl From<CliArgs> for Config {
-    fn from(args: CliArgs) -> Config {
-        let mut config = Config::default();
-
-        match args.command {
-            Commands::GenerateKey { keyfile } => {
-                config.keyfile = match keyfile {
-                    Some(arg) => arg,
-                    _ => config.keyfile,
-                }
-            }
-            Commands::Start {
-                ip_addr,
-                interface_name,
-                listen_addr,
-                listen_port,
-                keyfile,
-                enable_dht,
-                enable_mdns,
-                enable_upnp,
-                enable_relay,
-                enable_dcutr,
-                enable_autonat,
-                enable_identify,
-            } => {
-                config.ip_addr = match ip_addr {
-                    Some(arg) => arg,
-                    _ => config.ip_addr,
-                };
-
-                config.interface_name = match interface_name {
-                    Some(arg) => arg,
-                    _ => config.interface_name,
-                };
-
-                config.listen_addr = match listen_addr {
-                    Some(arg) => arg,
-                    _ => config.listen_addr,
-                };
-
-                config.listen_port = match listen_port {
-                    Some(arg) => arg,
-                    _ => config.listen_port,
-                };
-
-                config.keyfile = match keyfile {
-                    Some(arg) => arg,
-                    _ => config.keyfile,
-                };
-
-                config.discovery.dht = match enable_dht {
-                    Some(arg) => arg,
-                    _ => config.discovery.dht,
-                };
-
-                config.discovery.mdns = match enable_mdns {
-                    Some(arg) => arg,
-                    _ => config.discovery.mdns,
-                };
-
-                config.discovery.upnp = match enable_upnp {
-                    Some(arg) => arg,
-                    _ => config.discovery.upnp,
-                };
-
-                config.discovery.dcutr = match enable_dcutr {
-                    Some(arg) => arg,
-                    _ => config.discovery.dcutr,
-                };
-
-                config.discovery.autonat = match enable_autonat {
-                    Some(arg) => arg,
-                    _ => config.discovery.autonat,
-                };
-
-                config.discovery.identify = match enable_identify {
-                    Some(arg) => arg,
-                    _ => config.discovery.identify,
-                };
-
-                config.enable_relay = match enable_relay {
-                    Some(arg) => arg,
-                    _ => config.enable_relay,
-                };
             }
         }
 

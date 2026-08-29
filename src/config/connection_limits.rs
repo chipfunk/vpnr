@@ -10,6 +10,19 @@ pub struct ConnectionLimits {
     pub max_pending_outgoing: u32,
 }
 
+impl Default for ConnectionLimits {
+    fn default() -> Self {
+        Self {
+            max_established_total: 1024,
+            max_established_per_peer: 4,
+            max_established_incoming: 1024,
+            max_established_outgoing: 1024,
+            max_pending_incoming: 1024,
+            max_pending_outgoing: 1024,
+        }
+    }
+}
+
 impl Into<libp2p::connection_limits::ConnectionLimits> for ConnectionLimits {
     fn into(self) -> libp2p::connection_limits::ConnectionLimits {
         libp2p::connection_limits::ConnectionLimits::default()
@@ -19,18 +32,5 @@ impl Into<libp2p::connection_limits::ConnectionLimits> for ConnectionLimits {
             .with_max_established_per_peer(Some(self.max_established_per_peer))
             .with_max_pending_outgoing(Some(self.max_pending_outgoing))
             .with_max_pending_incoming(Some(self.max_pending_incoming))
-    }
-}
-
-impl Default for ConnectionLimits {
-    fn default() -> Self {
-        ConnectionLimits {
-            max_established_total: 1024,
-            max_established_per_peer: 4,
-            max_established_incoming: 1024,
-            max_established_outgoing: 1024,
-            max_pending_incoming: 1024,
-            max_pending_outgoing: 1024,
-        }
     }
 }

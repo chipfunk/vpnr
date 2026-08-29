@@ -2,7 +2,6 @@
 
 use clap::Parser;
 use cli::Commands;
-use config::Config;
 use libp2p::{
     PeerId,
     allow_block_list::{self, BlockedPeers},
@@ -10,9 +9,7 @@ use libp2p::{
     connection_limits::{self},
     dcutr, identify,
     identity::Keypair,
-    kad, mdns, memory_connection_limits, ping,
-    pnet::PreSharedKey,
-    relay,
+    kad, mdns, memory_connection_limits, ping, relay,
     swarm::{NetworkBehaviour, behaviour::toggle::Toggle},
     upnp,
 };
@@ -22,29 +19,27 @@ use std::{
     io::Read,
     num::NonZeroUsize,
     path::PathBuf,
-    str::FromStr,
     time::{Duration, Instant},
 };
-use tokio::{
-    fs::File,
-    io::{AsyncReadExt, AsyncWriteExt},
-};
+use tokio::{fs::File, io::AsyncWriteExt};
+
+use crate::config::Config;
 
 mod cli;
-pub mod config;
+pub(crate) mod config;
 mod swarm;
 mod vpn;
 
 #[derive(NetworkBehaviour)]
 struct VpnBehaviour {
+    identify: identify::Behaviour,
+    ping: ping::Behaviour,
     vpn: vpn::behaviour::Behaviour,
     dcutr: Toggle<dcutr::Behaviour>,
     autonat: Toggle<autonat::Behaviour>,
     blocked_peers: allow_block_list::Behaviour<BlockedPeers>,
     connection_limits: connection_limits::Behaviour,
     memory_limits: memory_connection_limits::Behaviour,
-    identify: Toggle<identify::Behaviour>,
-    ping: Toggle<ping::Behaviour>,
     kademlia: Toggle<kad::Behaviour<kad::store::MemoryStore>>,
     mdns: Toggle<mdns::tokio::Behaviour>,
     relay: Toggle<relay::Behaviour>,
@@ -66,35 +61,28 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let args = cli::CliArgs::parse();
 
+    let config: Config = confy::load("vpnr", None)?;
+
     match args.command {
-        Commands::GenerateKey { keyfile: _ } => {
-            let config = Config::from(args);
+        Commands::GenerateKey { keyfile } => {
+            let keypair = Keypair::generate_ed25519();
 
-            let data: [u8; 32] = rand::random();
-            let psk = PreSharedKey::new(data);
+            let mut file = File::create(keyfile).await?;
 
-            let mut psk_file = File::create(config.keyfile).await?;
+            let protobuf = keypair.to_protobuf_encoding()?;
 
-            psk_file.write_all(format!("{psk}").as_bytes()).await?;
-            psk_file.flush().await?;
+            file.write_all(&protobuf).await?;
+            file.flush().await?;
 
             Ok(())
         }
         Commands::Start {
-            ip_addr: _,
-            interface_name: _,
-            listen_addr: _,
-            listen_port: _,
-            keyfile: _,
-            enable_dht: _,
-            enable_mdns: _,
-            enable_upnp: _,
-            enable_relay: _,
-            enable_dcutr: _,
-            enable_autonat: _,
-            enable_identify: _,
+            ip_addr,
+            interface_name,
+            listen_addr,
+            listen_port,
+            keyfile,
         } => {
-            let config = Config::from(args);
             println!("{}", serde_yaml::to_string(&config)?);
 
             // let _interface = match interface::create(config.interface_name, config.ip_addr) {
@@ -102,31 +90,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
             //     Err(e) => panic!("Error creating TUN: {}.", e),
             // };
 
-            let _bytes = read_keyfile(PathBuf::from(config.clone().keyfile))?;
+            let _bytes = read_keyfile(PathBuf::from(keyfile))?.to_vec();
 
-            let local_keypair = Keypair::generate_ed25519();
+            let local_keypair = Keypair::from_protobuf_encoding(&_bytes)?;
 
-            let local_peer_id = PeerId::from(local_keypair.public());
-            println!("Local peer-id: {}", local_peer_id.clone());
-
-            let mut psk_file = File::open(config.keyfile.clone()).await?;
-
-            let mut psk = String::from("");
-            psk_file.read_to_string(&mut psk).await?;
-
-            let pre_shared_key = PreSharedKey::from_str(&psk)?;
-
-            println!(
-                "Pre-shared-key, fingerprint: {}",
-                pre_shared_key.fingerprint()
-            );
-
-            let mut swarm = match swarm::build(&local_keypair, pre_shared_key, config.clone()) {
-                Ok(swarm) => swarm,
-                Err(e) => {
-                    panic!("Error building swarm, {e}")
-                }
-            };
+            let mut swarm =
+                match swarm::build(&local_keypair, listen_addr, listen_port, config.clone()) {
+                    Ok(swarm) => swarm,
+                    Err(e) => {
+                        panic!("Error building swarm, {e}")
+                    }
+                };
 
             let mut pk_record_key = vec![];
             pk_record_key.extend_from_slice("/pk/".as_bytes());
