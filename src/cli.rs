@@ -15,7 +15,7 @@ pub enum Commands {
         keyfile: String,
     },
     Start {
-        #[clap(long, env = "VPNR_VPN_IP_ADDRESS")]
+        #[clap(long, env = "VPNR_VPN_IP_ADDR")]
         vpn_ip_addr: IpAddr,
         /// The network-interface to use
         #[clap(long, env = "VPNR_VPN_INTERFACE_NAME")]

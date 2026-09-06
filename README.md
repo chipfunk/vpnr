@@ -31,12 +31,50 @@ To build a container using podman:
 
 ## Setup
 
+### Virtual network device (TUN/TAP)
+
+#### Export settings
+
+These variables will be used by vpnr, overriding command-line arguments
+
+	export VPNR_VPN_IP_ADDR=172.28.5.1
+	export VPNR_VPN_INTERFACE_NAME=vpnr0
+	export VPNR_VPN_CIDR=$VPNR_VPN_IP_ADDR/24
+
+
+#### Create a virtual network-interface
+
+To create a virtual network-device:
+
+	sudo ip tuntap add dev $VPNR_VPN_INTERFACE_NAME mode tun
+	sudo ip addr add $VPNR_VPN_CIDR dev $VPNR_VPN_INTERFACE_NAME
+
+
+Bring device up
+
+	sudo ip link set $VPNR_VPN_INTERFACE_NAME up
+
+
+Check configuration:
+
+	sudo ip link show $VPNR_VPN_INTERFACE_NAME
+
+
+To remove the created interface:
+
+	sudo ip tuntap del dev $VPNR_VPN_INTERFACE_NAME mode tun
+
+
+### Private key
+
+**Keep your private-key safe!**
+
 Generate a private key and store it in file `YOUR_PRIVATE_KEY_FILE`:
 
     vpnr generate-key YOUR_PRIVATE_KEY_FILE
 
 
-This will generate a file `YOUR_PRIVATE_KEY_FILE` containing your private-key. Keep your private-key safe!
+This will generate a file `YOUR_PRIVATE_KEY_FILE` containing your private-key.
 
 
 ## Run the service

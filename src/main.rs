@@ -89,9 +89,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
             info!("{}", serde_yaml::to_string(&config)?);
 
             let interface = match tun_rs::DeviceBuilder::new()
+                .layer(tun_rs::Layer::L3)
                 .name(vpn_interface_name.clone())
                 .ipv4(vpn_ip_addr, 24, None)
-                .enable(true)
                 .build_sync()
             {
                 Ok(interface) => interface,
@@ -102,9 +102,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 vpn_interface_name, vpn_ip_addr
             );
 
-            let _bytes = read_keyfile(PathBuf::from(keyfile))?.to_vec();
+            let bytes = match read_keyfile(PathBuf::from(keyfile.clone())) {
+                Ok(bytes) => bytes.to_vec(),
+                Err(e) => {
+                    panic!("Error loading keyfile {}, {:?}", keyfile, e)
+                }
+            };
 
-            let local_keypair = Keypair::from_protobuf_encoding(&_bytes)?;
+            let local_keypair = Keypair::from_protobuf_encoding(&bytes)?;
 
             let mut swarm = match swarm::build(&local_keypair, interface, config.clone()) {
                 Ok(swarm) => swarm,
