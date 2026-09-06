@@ -1,7 +1,6 @@
 mod handler;
 mod upgrade;
 
-use super::config::Config;
 use handler::Handler;
 use libp2p::{
     Multiaddr, PeerId,
@@ -11,27 +10,20 @@ use libp2p::{
 use std::collections::HashSet;
 use std::task::{Context, Poll};
 use tracing::trace;
+use tun_rs::SyncDevice;
 
 #[derive(Debug)]
-pub enum Event {
-    TestEvent,
-    VpnEstablishedEvent,
-}
-
-pub struct TestEvent {}
-pub struct VpnEstablishedEvent {
-    pub peer_id: PeerId,
-}
+pub enum Event {}
 
 pub struct Behaviour {
-    config: Config,
+    _interface: SyncDevice,
     peers: HashSet<PeerId>,
 }
 
 impl Behaviour {
-    pub fn new(config: Config) -> Self {
+    pub fn new(interface: SyncDevice) -> Self {
         Self {
-            config,
+            _interface: interface,
             peers: HashSet::new(),
         }
     }
@@ -45,12 +37,7 @@ impl NetworkBehaviour for Behaviour {
     type ToSwarm = Event;
 
     fn on_swarm_event(&mut self, event: libp2p::swarm::FromSwarm) {
-        trace!("Behaviour::on_swarm_event, {:?}", event);
-        match event {
-            _ => {
-                trace!("vpn::Behaviour::on_swarm_event")
-            }
-        }
+        trace!("vpn::Behaviour::on_swarm_event, {:?}", event);
     }
 
     fn poll(
@@ -58,19 +45,8 @@ impl NetworkBehaviour for Behaviour {
         cx: &mut Context<'_>,
     ) -> Poll<ToSwarm<Self::ToSwarm, THandlerInEvent<Self>>> {
         trace!("Behaviour::poll, {:?}", cx);
-        Poll::Pending
-    }
 
-    fn on_connection_handler_event(
-        &mut self,
-        peer_id: PeerId,
-        connection_id: ConnectionId,
-        event: libp2p::swarm::THandlerOutEvent<Self>,
-    ) {
-        trace!(
-            "Behaviour::on_connection_handler_event, {}, {}, {:?}",
-            peer_id, connection_id, event
-        );
+        Poll::Pending
     }
 
     fn handle_pending_inbound_connection(
@@ -80,7 +56,7 @@ impl NetworkBehaviour for Behaviour {
         remote_addr: &Multiaddr,
     ) -> Result<(), ConnectionDenied> {
         trace!(
-            "Behaviour::handle_pending_inbound_connection, {}, {}, {}",
+            "vpn::Behaviour::handle_pending_inbound_connection, {}, {}, {}",
             connection_id, local_addr, remote_addr
         );
 
@@ -96,7 +72,7 @@ impl NetworkBehaviour for Behaviour {
         effective_role: Endpoint,
     ) -> Result<Vec<Multiaddr>, ConnectionDenied> {
         trace!(
-            "Behaviour::handle_pending_outbound_connection, {}, {:?}, {:?}, {:?}",
+            "vpn::Behaviour::handle_pending_outbound_connection, {}, {:?}, {:?}, {:?}",
             connection_id, maybe_peer, addresses, effective_role
         );
 
@@ -112,7 +88,7 @@ impl NetworkBehaviour for Behaviour {
         remote_addr: &Multiaddr,
     ) -> Result<libp2p::swarm::THandler<Self>, ConnectionDenied> {
         trace!(
-            "Behaviour::handle_established_inbound_connection, {}, {}, {}, {}",
+            "vpn::Behaviour::handle_established_inbound_connection, {}, {}, {}, {}",
             connection_id, peer, local_addr, remote_addr
         );
 
@@ -131,7 +107,7 @@ impl NetworkBehaviour for Behaviour {
         port_use: libp2p::core::transport::PortUse,
     ) -> Result<libp2p::swarm::THandler<Self>, ConnectionDenied> {
         trace!(
-            "Behaviour::handle_established_outbound_connection, {}, {}, {}, {:?}, {:?}",
+            "vpn::Behaviour::handle_established_outbound_connection, {}, {}, {}, {:?}, {:?}",
             connection_id, peer, addr, role_override, port_use
         );
 
@@ -139,5 +115,19 @@ impl NetworkBehaviour for Behaviour {
 
         // Err(ConnectionDenied::new("Because why out ..."))
         Ok(Handler::default())
+    }
+
+    fn on_connection_handler_event(
+        &mut self,
+        peer_id: PeerId,
+        connection_id: ConnectionId,
+        event: libp2p::swarm::THandlerOutEvent<Self>,
+    ) {
+        trace!(
+            "vpn::Behaviour::on_connection_handler_event, {}, {}, {:?}",
+            peer_id, connection_id, event
+        );
+
+        match event {}
     }
 }

@@ -9,8 +9,6 @@ pub struct Upgrade {
     pub(crate) supported_protocols: Vec<StreamProtocol>,
 }
 
-struct HandshakeError {}
-
 #[derive(Debug)]
 pub enum Error {
     HandshakeError,

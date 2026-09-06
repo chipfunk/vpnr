@@ -20,7 +20,7 @@ impl Default for Mdns {
 impl From<libp2p::mdns::Config> for Mdns {
     fn from(config: libp2p::mdns::Config) -> Self {
         Self {
-            enabled: true,
+            enabled: false,
             ttl: config.ttl.as_secs(),
             query_interval: config.query_interval.as_secs(),
             enable_ipv6: config.enable_ipv6,

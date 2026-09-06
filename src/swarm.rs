@@ -1,26 +1,23 @@
 use futures::StreamExt;
 use libp2p::{
-    Multiaddr, Swarm, allow_block_list, autonat, connection_limits, dcutr, identify,
+    Swarm, allow_block_list, autonat, connection_limits, dcutr, identify,
     identity::Keypair,
-    kad, mdns, memory_connection_limits,
-    multiaddr::Protocol,
-    noise, ping, relay,
+    kad, mdns, memory_connection_limits, noise, ping, relay,
     swarm::{SwarmEvent, behaviour::toggle::Toggle},
     tcp, upnp, yamux,
 };
-use std::time::Duration;
-use std::{error::Error, net::IpAddr};
-use tracing::{info, trace};
+use std::{error::Error, time::Duration};
+use tracing::trace;
+use tun_rs::SyncDevice;
 
 use crate::{VpnBehaviour, VpnBehaviourEvent, config::Config, vpn};
 
 pub(crate) fn build(
     keypair: &Keypair,
-    listen_addr: IpAddr,
-    listen_port: u16,
+    vpn_interface: SyncDevice,
     config: Config,
 ) -> Result<Swarm<VpnBehaviour>, Box<dyn Error>> {
-    let mut swarm = libp2p::SwarmBuilder::with_existing_identity(keypair.clone())
+    let swarm = libp2p::SwarmBuilder::with_existing_identity(keypair.clone())
         .with_tokio()
         .with_tcp(
             tcp::Config::default(),
@@ -107,25 +104,11 @@ pub(crate) fn build(
                     None
                 }
             }),
-            vpn: vpn::behaviour::Behaviour::new(vpn::config::Config::default()),
+
+            vpn: vpn::behaviour::Behaviour::new(vpn_interface),
         })?
         .with_swarm_config(|cfg| cfg.with_idle_connection_timeout(Duration::from_secs(u64::MAX)))
         .build();
-
-    let mut listen_tcp = Multiaddr::from(listen_addr);
-    listen_tcp.push(Protocol::Tcp(listen_port));
-    info!("Listening on interface {}", listen_tcp);
-    swarm.listen_on(listen_tcp)?;
-
-    let mut listen_udp = Multiaddr::from(listen_addr);
-    listen_udp.push(Protocol::Udp(listen_port));
-    listen_udp.push(Protocol::QuicV1);
-    info!("Listening on interface {}", listen_udp);
-    swarm.listen_on(listen_udp)?;
-
-    for address in config.bootstrap {
-        swarm.dial(address)?;
-    }
 
     Ok(swarm)
 }

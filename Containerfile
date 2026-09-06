@@ -2,10 +2,12 @@ FROM rust:trixie AS BUILD
 
 WORKDIR /app
 
-COPY . /app
+COPY Cargo.toml /app/
+COPY Cargo.lock /app/
+COPY src/ /app/src/
+COPY README.md /app/
 
 RUN cargo build --release
-
 
 FROM debian:trixie AS RUN
 

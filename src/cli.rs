@@ -15,11 +15,11 @@ pub enum Commands {
         keyfile: String,
     },
     Start {
-        #[clap(long, env = "VPNR_IP_ADDRESS")]
-        ip_addr: Option<IpAddr>,
+        #[clap(long, env = "VPNR_VPN_IP_ADDRESS")]
+        vpn_ip_addr: IpAddr,
         /// The network-interface to use
-        #[clap(long)]
-        interface_name: Option<String>,
+        #[clap(long, env = "VPNR_VPN_INTERFACE_NAME")]
+        vpn_interface_name: String,
         #[clap(long, env = "VPNR_LISTEN_ADDR", default_value = "127.0.0.1")]
         listen_addr: IpAddr,
         #[clap(long, env = "VPNR_LISTEN_PORT", default_value = "4001")]

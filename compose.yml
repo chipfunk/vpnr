@@ -4,32 +4,39 @@ services:
         command:
             - start
         environment:
-            - VPNR_IP_ADDRESS=172.28.5.1
+            - VPNR_VPN_IP_ADDRESS=172.28.5.1
+            - VPNR_VPN_INTERFACE_NAME=vpnr0
             - VPNR_PRIVATE_KEYFILE_PATH=/run/secrets/vpnr_1
             - VPNR_LISTEN_ADDR=0.0.0.0
-            - VPNR_LISTEN_PORT=4001
+            - VPNR_LISTEN_PORT=1111
         secrets:
             - vpnr_1
         volumes:
             - vpnr_1:/data
         networks:
-            - nodes
+            - vpnr-network
+        cap_add:
+            - CAP_NET_ADMIN
 
     vpnr_2:
         image: chipfunk/vpnr:latest
         command:
             - start
         environment:
-            - VPNR_IP_ADDRESS=172.28.5.2
+            - VPNR_VPN_IP_ADDRESS=172.28.5.2
+            - VPNR_VPN_INTERFACE_NAME=vpnr0
             - VPNR_PRIVATE_KEYFILE_PATH=/run/secrets/vpnr_2
             - VPNR_LISTEN_ADDR=0.0.0.0
-            - VPNR_LISTEN_PORT=4002
+            - VPNR_LISTEN_PORT=2222
+            - RUST_LOG=DEBUG
         secrets:
             - vpnr_2
         volumes:
             - vpnr_2:/data
         networks:
-            - nodes
+            - vpnr-network
+        cap_add:
+            - CAP_NET_ADMIN
 
 secrets:
     vpnr_1:
@@ -42,7 +49,7 @@ volumes:
     vpnr_2: {}
 
 networks:
-    nodes:
+    vpnr-network:
         driver: bridge
         internal: true
         enable_ipv4: true

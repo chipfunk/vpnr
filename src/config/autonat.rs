@@ -1,6 +1,3 @@
-use std::time::Duration;
-
-use libp2p::autonat::Config;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
