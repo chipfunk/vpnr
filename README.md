@@ -1,8 +1,8 @@
 # vpnr (experimental)
 
-A VPN based on [libp2p](https://www.libp2p.io/) and [wireguard-proctol](https://www.wireguard.com/).
+A VPN based on [libp2p](https://www.libp2p.io/).
 
-Use [libp2p](https://www.libp2p.io/) to discover and manage network-connections, setup a secure channel utilizing [wireguard-proctol](https://www.wireguard.com/), provide traffic on local TUN device.
+Use [libp2p](https://www.libp2p.io/) to discover and manage network-connections, setup a secure channel and provide traffic on local TUN device.
 
 
 # IMPORTANT
