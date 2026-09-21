@@ -3810,9 +3810,9 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "tun-rs"
-version = "2.8.9"
+version = "2.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a459772235a7c74f58c7a6479c43cc9ee64d6edb4af831364ebb152c978a97fd"
+checksum = "19e3459c60bb1cd4a5969fced4299be335b3e3169d8cb3466ffe23da56eeeeb4"
 dependencies = [
  "byteorder",
  "bytes",
