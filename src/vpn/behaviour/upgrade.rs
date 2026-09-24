@@ -10,9 +10,7 @@ pub struct Upgrade {
 }
 
 #[derive(Debug)]
-pub enum Error {
-    HandshakeError,
-}
+pub enum Error {}
 
 impl Upgrade {
     pub fn new() -> Self {
@@ -21,9 +19,10 @@ impl Upgrade {
         }
     }
 
-    fn handshake(self, socket: &Stream) -> Result<(), Error> {
-        trace!("{:?}", socket);
-        Ok(())
+    fn handshake(self, socket: Stream) -> Result<(Stream, StreamProtocol), Error> {
+        trace!("vpn::Upgrade::handshake, {:?}", socket);
+
+        Ok((socket, VPN_PROTOCOL))
     }
 }
 
@@ -33,7 +32,7 @@ impl UpgradeInfo for Upgrade {
     type InfoIter = std::vec::IntoIter<StreamProtocol>;
 
     fn protocol_info(&self) -> Self::InfoIter {
-        trace!("UpgradeInfo::protocol_info");
+        trace!("vpn::Upgrade::UpgradeInfo::protocol_info");
         self.supported_protocols.clone().into_iter()
     }
 }
@@ -46,12 +45,12 @@ impl InboundUpgrade<Stream> for Upgrade {
     type Future = Ready<Result<Self::Output, Self::Error>>;
 
     fn upgrade_inbound(self, socket: Stream, info: Self::Info) -> Self::Future {
-        trace!("InboundUpgrade::upgrade_inbound, {:?}, {:?}", socket, info);
+        trace!(
+            "vpn::Upgrade::InboundUpgrade::upgrade_inbound, {:?}, {:?}",
+            socket, info
+        );
 
-        match self.handshake(&socket) {
-            Ok(()) => ready(Ok((socket, info))),
-            _ => ready(Err(Error::HandshakeError {})),
-        }
+        ready(self.handshake(socket))
     }
 }
 
@@ -64,13 +63,10 @@ impl OutboundUpgrade<Stream> for Upgrade {
 
     fn upgrade_outbound(self, socket: Stream, info: Self::Info) -> Self::Future {
         trace!(
-            "OutboundUpgrade::upgrade_outbound, {:?}, {:?}",
-            socket, info
+            "vpn::Upgrade::OutboundUpgrade::upgrade_outbound, {:?}",
+            info
         );
 
-        match self.handshake(&socket) {
-            Ok(()) => ready(Ok((socket, info))),
-            _ => ready(Err(Error::HandshakeError {})),
-        }
+        ready(self.handshake(socket))
     }
 }

@@ -10,6 +10,7 @@ use libp2p::Multiaddr;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use std::vec::Vec;
+use tracing::error;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -28,7 +29,7 @@ impl Default for Config {
     fn default() -> Self {
         let mut config = Config {
             connection_limits: connection_limits::ConnectionLimits::default(),
-            memory_limit: 128,
+            memory_limit: 32 * 1024 * 1024,
             bootstrap: vec![],
             autonat: autonat::Autonat::default(),
             dht: dht::Dht::default(),
@@ -39,6 +40,10 @@ impl Default for Config {
         };
 
         for addr in [
+            // --- private bootstrap-nodes ---
+            "/ip4/172.28.0.3/tcp/2222/p2p/12D3KooWAz3Rhe2hmZEKrEqcJZphRNwZLDHq1xfboZV7we4CXkpV",
+            "/ip4/172.28.0.2/tcp/1111/p2p/12D3KooWCQjHne8AWHGkuttnw78AGUKU3oDMGCMKnwtfLKX2H9sK",
+            // --- public bootstrap-nodes ---
             // "/ip4/104.131.131.82/tcp/4001",
             // "/ip6/2604:1380:1000:6000::1/tcp/4001/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
             // "/ip4/147.75.69.143/tcp/4001/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
@@ -53,7 +58,7 @@ impl Default for Config {
         ] {
             match Multiaddr::from_str(addr) {
                 Ok(addr) => config.bootstrap.push(addr),
-                Err(e) => println!("Error parsing configured multi-addr, {addr}, {e}"),
+                Err(e) => error!("Error parsing configured multi-addr, {addr}, {e}"),
             }
         }
 

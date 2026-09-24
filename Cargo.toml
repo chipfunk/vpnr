@@ -14,7 +14,6 @@ libp2p = { version = ">=0.56.0", features = [
     "noise",
     "identify",
     "ping",
-    "relay",
     "pnet",
     "quic",
     "relay",
@@ -44,7 +43,7 @@ tun-rs = { version = "2.8.9", features = ["tokio"] }
 
 [profile.release]
 opt-level = 2
-lto = true
-codegen-units = 1
+#lto = true
+#codegen-units = 1
 panic = 'abort'
 strip = true

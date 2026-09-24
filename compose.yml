@@ -4,39 +4,70 @@ services:
         command:
             - start
         environment:
-            - VPNR_VPN_IP_ADDRESS=172.28.5.1
-            - VPNR_VPN_INTERFACE_NAME=vpnr0
+            - VPNR_VPN_IP_ADDR=10.0.1.1
+            - VPNR_VPN_INTERFACE_NAME=vpnr1
             - VPNR_PRIVATE_KEYFILE_PATH=/run/secrets/vpnr_1
             - VPNR_LISTEN_ADDR=0.0.0.0
             - VPNR_LISTEN_PORT=1111
+            - RUST_LOG=TRACE
         secrets:
             - vpnr_1
         volumes:
             - vpnr_1:/data
         networks:
-            - vpnr-network
+            - node-discovery
+        privileged: true
+        devices:
+            - /dev/net/tun:/dev/net/tun:rw
         cap_add:
-            - CAP_NET_ADMIN
+            - CHOWN
+            - DAC_OVERRIDE
+            - FOWNER
+            - FSETID
+            - KILL
+            - NET_BIND_SERVICE
+            - SETFCAP
+            - SETGID
+            - SETPCAP
+            - SETUID
+            - SYS_CHROOT
+            - NET_ADMIN
+            - NET_RAW
 
     vpnr_2:
         image: chipfunk/vpnr:latest
         command:
             - start
         environment:
-            - VPNR_VPN_IP_ADDRESS=172.28.5.2
-            - VPNR_VPN_INTERFACE_NAME=vpnr0
+            - VPNR_VPN_IP_ADDR=10.0.1.2
+            - VPNR_VPN_INTERFACE_NAME=vpnr2
             - VPNR_PRIVATE_KEYFILE_PATH=/run/secrets/vpnr_2
             - VPNR_LISTEN_ADDR=0.0.0.0
             - VPNR_LISTEN_PORT=2222
-            - RUST_LOG=DEBUG
+            - RUST_LOG=TRACE
         secrets:
             - vpnr_2
         volumes:
             - vpnr_2:/data
         networks:
-            - vpnr-network
+            - node-discovery
+        privileged: true
+        devices:
+            - /dev/net/tun:/dev/net/tun:rw
         cap_add:
-            - CAP_NET_ADMIN
+            - CHOWN
+            - DAC_OVERRIDE
+            - FOWNER
+            - FSETID
+            - KILL
+            - NET_BIND_SERVICE
+            - SETFCAP
+            - SETGID
+            - SETPCAP
+            - SETUID
+            - SYS_CHROOT
+            - NET_ADMIN
+            - NET_RAW
 
 secrets:
     vpnr_1:
@@ -49,7 +80,7 @@ volumes:
     vpnr_2: {}
 
 networks:
-    vpnr-network:
+    node-discovery:
         driver: bridge
         internal: true
         enable_ipv4: true

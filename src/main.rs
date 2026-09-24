@@ -24,7 +24,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tokio::{fs::File, io::AsyncWriteExt};
-use tracing::{info, trace};
+use tracing::{debug, info, trace};
 
 use crate::config::Config;
 
@@ -71,7 +71,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let keypair = Keypair::generate_ed25519();
 
             let mut file = File::create(keyfile).await?;
-
             let protobuf = keypair.to_protobuf_encoding()?;
 
             file.write_all(&protobuf).await?;
@@ -86,7 +85,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             listen_port,
             keyfile,
         } => {
-            info!("{}", serde_yaml::to_string(&config)?);
+            debug!("{}", serde_yaml::to_string(&config)?);
 
             let interface = match tun_rs::DeviceBuilder::new()
                 .layer(tun_rs::Layer::L3)
@@ -102,34 +101,33 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 vpn_interface_name, vpn_ip_addr
             );
 
-            let bytes = match read_keyfile(PathBuf::from(keyfile.clone())) {
-                Ok(bytes) => bytes.to_vec(),
-                Err(e) => {
-                    panic!("Error loading keyfile {}, {:?}", keyfile, e)
-                }
+            let bytes = match read_keyfile(PathBuf::from(keyfile.as_str())) {
+                Ok(bytes) => bytes,
+                Err(e) => panic!("Error loading keyfile {}, {:?}", keyfile, e),
             };
 
             let local_keypair = Keypair::from_protobuf_encoding(&bytes)?;
 
             let mut swarm = match swarm::build(&local_keypair, interface, config.clone()) {
                 Ok(swarm) => swarm,
-                Err(e) => {
-                    panic!("Error building swarm, {e}")
-                }
+                Err(e) => panic!("Error building swarm, {e}"),
             };
 
             let mut listen_tcp = Multiaddr::from(listen_addr);
             listen_tcp.push(Protocol::Tcp(listen_port));
+
             info!("Listening on interface {}", listen_tcp);
             swarm.listen_on(listen_tcp)?;
 
             let mut listen_udp = Multiaddr::from(listen_addr);
             listen_udp.push(Protocol::Udp(listen_port));
             listen_udp.push(Protocol::QuicV1);
+
             info!("Listening on interface {}", listen_udp);
             swarm.listen_on(listen_udp)?;
 
             for address in config.bootstrap {
+                info!("Adding bootstrap-node {:?}", address);
                 swarm.dial(address)?;
             }
 
@@ -140,7 +138,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let mut pk_record =
                 kad::Record::new(pk_record_key, local_keypair.public().encode_protobuf());
             pk_record.publisher = Some(*swarm.local_peer_id());
-            pk_record.expires = Instant::now().checked_add(Duration::from_secs(60));
+            pk_record.expires = Instant::now().checked_add(Duration::from_secs(300));
 
             if swarm.behaviour().kademlia.is_enabled() {
                 swarm

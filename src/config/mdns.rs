@@ -13,27 +13,21 @@ pub struct Mdns {
 
 impl Default for Mdns {
     fn default() -> Self {
-        Self::from(libp2p::mdns::Config::default())
-    }
-}
-
-impl From<libp2p::mdns::Config> for Mdns {
-    fn from(config: libp2p::mdns::Config) -> Self {
         Self {
             enabled: false,
-            ttl: config.ttl.as_secs(),
-            query_interval: config.query_interval.as_secs(),
-            enable_ipv6: config.enable_ipv6,
+            ttl: 20,
+            query_interval: 30,
+            enable_ipv6: false,
         }
     }
 }
 
-impl Into<libp2p::mdns::Config> for Mdns {
-    fn into(self) -> libp2p::mdns::Config {
+impl From<Mdns> for libp2p::mdns::Config {
+    fn from(config: Mdns) -> Self {
         libp2p::mdns::Config {
-            ttl: Duration::from_secs(self.ttl),
-            query_interval: Duration::from_secs(self.query_interval),
-            enable_ipv6: self.enable_ipv6,
+            ttl: Duration::from_secs(config.ttl),
+            query_interval: Duration::from_secs(config.query_interval),
+            enable_ipv6: config.enable_ipv6,
         }
     }
 }

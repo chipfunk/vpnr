@@ -7,7 +7,7 @@ use libp2p::{
     tcp, upnp, yamux,
 };
 use std::{error::Error, time::Duration};
-use tracing::trace;
+use tracing::{debug, error, info, trace};
 use tun_rs::SyncDevice;
 
 use crate::{VpnBehaviour, VpnBehaviourEvent, config::Config, vpn};
@@ -44,7 +44,7 @@ pub(crate) fn build(
                     libp2p::autonat::Config::default(),
                 )),
                 false => {
-                    println!("Not using autonat ...");
+                    debug!("Not using autonat ...");
                     None
                 }
             }),
@@ -52,7 +52,7 @@ pub(crate) fn build(
             dcutr: Toggle::from(match config.dcutr.enabled {
                 true => Some(dcutr::Behaviour::new(keypair.public().to_peer_id())),
                 false => {
-                    println!("Not using dcutr ...");
+                    info!("Not using dcutr ...");
                     None
                 }
             }),
@@ -64,12 +64,12 @@ pub(crate) fn build(
                 ) {
                     Ok(mdns) => Some(mdns),
                     Err(e) => {
-                        println!("Error initializing mDNS, {e}");
+                        error!("Error initializing mDNS, {e}");
                         None
                     }
                 },
                 false => {
-                    println!("Not using mDNS ...");
+                    info!("Not using mDNS ...");
                     None
                 }
             }),
@@ -77,7 +77,7 @@ pub(crate) fn build(
             upnp: Toggle::from(match config.upnp.enabled {
                 true => Some(upnp::tokio::Behaviour::default()),
                 false => {
-                    println!("Not using UPnP ...");
+                    info!("Not using UPnP ...");
                     None
                 }
             }),
@@ -89,7 +89,7 @@ pub(crate) fn build(
                     kad::Config::new(kad::PROTOCOL_NAME),
                 )),
                 false => {
-                    println!("Not using DHT ...");
+                    info!("Not using DHT ...");
                     None
                 }
             }),
@@ -100,7 +100,7 @@ pub(crate) fn build(
                     relay::Config::default(),
                 )),
                 false => {
-                    println!("Not using relay ...");
+                    info!("Not using relay ...");
                     None
                 }
             }),
@@ -131,13 +131,19 @@ pub async fn run(mut swarm: Swarm<VpnBehaviour>) -> Result<(), Box<dyn Error>> {
                     }
                 }
 
+                SwarmEvent::Behaviour(VpnBehaviourEvent::Mdns(mdns::Event::Discovered(peers))) => {
+                    trace!("mdns::Event::Discovered, address: {:?}", peers);
+                    for (peer_id, peer_addr) in peers {
+                        swarm.add_peer_address(peer_id, peer_addr);
+                    }
+                }
 
-                SwarmEvent::Behaviour(VpnBehaviourEvent::Upnp(upnp::Event::NewExternalAddr(address))) => {
-                    trace!("upnp::Event::NewExternalAddr, new external address: {}", address);
+                SwarmEvent::Behaviour(VpnBehaviourEvent::Upnp(upnp::Event::NewExternalAddr { local_addr, external_addr})) => {
+                    trace!("upnp::Event::NewExternalAddr, local addr {}, new external address: {}", local_addr, external_addr);
                     // if swarm.behaviour_mut().kademlia.is_enabled() {
                     //     swarm.behaviour_mut().kademlia.as_mut().unwrap().add_address(&local_peer_id, address);
                     // }
-                    swarm.add_external_address(address);
+                    swarm.add_external_address(external_addr);
                 }
 
                 SwarmEvent::Behaviour(VpnBehaviourEvent::Kademlia(kad::Event::OutboundQueryProgressed { id, result, stats, step })) => {
@@ -162,39 +168,27 @@ pub async fn run(mut swarm: Swarm<VpnBehaviour>) -> Result<(), Box<dyn Error>> {
                             Err(e) => trace!("{}", e),
                         },
                         kad::QueryResult::GetProviders(result) => match result {
-                            Ok(result) => {
-                                trace!("{:?}", result);
-                            },
+                            Ok(result) => trace!("{:?}", result),
                             Err(e) => trace!("{}", e),
                         },
                         kad::QueryResult::StartProviding(result) =>  match result {
-                            Ok(result) => {
-                                trace!("{:?}", result);
-                            },
+                            Ok(result) => trace!("{:?}", result),
                             Err(e) => trace!("{}", e),
                         },
                         kad::QueryResult::RepublishProvider(result) => match result {
-                            Ok(result) => {
-                                trace!("{:?}", result);
-                            },
+                            Ok(result) => trace!("{:?}", result),
                             Err(e) => trace!("{}", e),
                         },
                         kad::QueryResult::GetRecord(result) => match result {
-                            Ok(result) => {
-                                trace!("{:?}", result);
-                            },
+                            Ok(result) => trace!("{:?}", result),
                             Err(e) => trace!("{}", e),
                         },
                         kad::QueryResult::PutRecord(result) => match result {
-                            Ok(result) => {
-                                trace!("{:?}", result);
-                            },
+                            Ok(result) => trace!("{:?}", result),
                             Err(e) => trace!("{}", e),
                         },
                         kad::QueryResult::RepublishRecord(result) => match result {
-                            Ok(result) => {
-                                trace!("{:?}", result);
-                            },
+                            Ok(result) => trace!("{:?}", result),
                             Err(e) => trace!("{}", e),
                         },
                     }

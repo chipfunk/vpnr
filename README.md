@@ -216,11 +216,12 @@ Good news first: it is possible to operate the service in a containerized enviro
 
 To successfully expose the VPN-service to a network, the service has to have a specific port-number assigned before starting the container.
 
-	export VPN_LISTEN_PORT=59123
+	export VPNR_LISTEN_PORT=59123
 	podman run \
-		-p $VPN_LISTEN_PORT:$VPN_LISTEN_PORT/tcp \
-		-p $VPN_LISTEN_PORT:$VPN_LISTEN_PORT/udp \
+		-p $VPNR_LISTEN_PORT:$VPNR_LISTEN_PORT/tcp \
+		-p $VPNR_LISTEN_PORT:$VPNR_LISTEN_PORT/udp \
 		--mount type=bind,src=$(pwd),target=/vpnr,z chipfunk/vpnr:latest \
+		--device /dev/net/tun:/dev/net/tun:rw \
 		start \
 		--keyfile=/vpnr/YOUR_PRIVATE_KEY_FILE \
 		--listen-port $VPN_LISTEN_PORT

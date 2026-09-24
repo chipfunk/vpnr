@@ -1,12 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Dcutr {
     pub enabled: bool,
-}
-
-impl Default for Dcutr {
-    fn default() -> Self {
-        Self { enabled: false }
-    }
 }

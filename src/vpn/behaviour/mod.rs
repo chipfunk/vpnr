@@ -37,7 +37,7 @@ impl NetworkBehaviour for Behaviour {
     type ToSwarm = Event;
 
     fn on_swarm_event(&mut self, event: libp2p::swarm::FromSwarm) {
-        trace!("vpn::Behaviour::on_swarm_event, {:?}", event);
+        trace!("vpn::NetworkBehaviour::on_swarm_event, {:?}", event);
     }
 
     fn poll(
@@ -56,7 +56,7 @@ impl NetworkBehaviour for Behaviour {
         remote_addr: &Multiaddr,
     ) -> Result<(), ConnectionDenied> {
         trace!(
-            "vpn::Behaviour::handle_pending_inbound_connection, {}, {}, {}",
+            "vpn::NetworkBehaviour::handle_pending_inbound_connection, {}, {}, {}",
             connection_id, local_addr, remote_addr
         );
 
@@ -72,12 +72,12 @@ impl NetworkBehaviour for Behaviour {
         effective_role: Endpoint,
     ) -> Result<Vec<Multiaddr>, ConnectionDenied> {
         trace!(
-            "vpn::Behaviour::handle_pending_outbound_connection, {}, {:?}, {:?}, {:?}",
+            "vpn::NetworkBehaviour::handle_pending_outbound_connection, {}, {:?}, {:?}, {:?}",
             connection_id, maybe_peer, addresses, effective_role
         );
 
         // Err(ConnectionDenied::new("Because out ..."))
-        Ok(vec![])
+        Ok(addresses.to_vec())
     }
 
     fn handle_established_inbound_connection(
@@ -88,7 +88,7 @@ impl NetworkBehaviour for Behaviour {
         remote_addr: &Multiaddr,
     ) -> Result<libp2p::swarm::THandler<Self>, ConnectionDenied> {
         trace!(
-            "vpn::Behaviour::handle_established_inbound_connection, {}, {}, {}, {}",
+            "vpn::NetworkBehaviour::handle_established_inbound_connection, {}, {}, {}, {}",
             connection_id, peer, local_addr, remote_addr
         );
 
@@ -107,7 +107,7 @@ impl NetworkBehaviour for Behaviour {
         port_use: libp2p::core::transport::PortUse,
     ) -> Result<libp2p::swarm::THandler<Self>, ConnectionDenied> {
         trace!(
-            "vpn::Behaviour::handle_established_outbound_connection, {}, {}, {}, {:?}, {:?}",
+            "vpn::NetworkBehaviour::handle_established_outbound_connection, {}, {}, {}, {:?}, {:?}",
             connection_id, peer, addr, role_override, port_use
         );
 
@@ -124,7 +124,7 @@ impl NetworkBehaviour for Behaviour {
         event: libp2p::swarm::THandlerOutEvent<Self>,
     ) {
         trace!(
-            "vpn::Behaviour::on_connection_handler_event, {}, {}, {:?}",
+            "vpn::NetworkBehaviour::on_connection_handler_event, {}, {}, {:?}",
             peer_id, connection_id, event
         );
 
