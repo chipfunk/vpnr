@@ -8,13 +8,13 @@ use libp2p::{
 };
 use std::{error::Error, time::Duration};
 use tracing::{debug, error, info, trace};
-use tun_rs::SyncDevice;
+use tun_rs::AsyncDevice;
 
 use crate::{VpnBehaviour, VpnBehaviourEvent, config::Config, vpn};
 
 pub(crate) fn build(
     keypair: &Keypair,
-    vpn_interface: SyncDevice,
+    vpn_interface: AsyncDevice,
     config: Config,
 ) -> Result<Swarm<VpnBehaviour>, Box<dyn Error>> {
     let swarm = libp2p::SwarmBuilder::with_existing_identity(keypair.clone())

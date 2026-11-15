@@ -10,18 +10,18 @@ use libp2p::{
 use std::collections::HashSet;
 use std::task::{Context, Poll};
 use tracing::trace;
-use tun_rs::SyncDevice;
+use tun_rs::AsyncDevice;
 
 #[derive(Debug)]
 pub enum Event {}
 
 pub struct Behaviour {
-    _interface: SyncDevice,
+    _interface: AsyncDevice,
     peers: HashSet<PeerId>,
 }
 
 impl Behaviour {
-    pub fn new(interface: SyncDevice) -> Self {
+    pub fn new(interface: AsyncDevice) -> Self {
         Self {
             _interface: interface,
             peers: HashSet::new(),

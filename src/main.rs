@@ -91,7 +91,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 .layer(tun_rs::Layer::L3)
                 .name(vpn_interface_name.clone())
                 .ipv4(vpn_ip_addr, 24, None)
-                .build_sync()
+                .build_async()
             {
                 Ok(interface) => interface,
                 Err(e) => panic!("Error creating TUN: {}.", e),
