@@ -33,7 +33,7 @@ pub(crate) mod config;
 mod swarm;
 
 #[derive(NetworkBehaviour)]
-struct VpnBehaviour {
+struct VpnrBehaviour {
     identify: identify::Behaviour,
     ping: ping::Behaviour,
     dcutr: Toggle<dcutr::Behaviour>,

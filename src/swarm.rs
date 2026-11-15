@@ -10,13 +10,13 @@ use std::{error::Error, time::Duration};
 use tracing::{debug, error, info, trace};
 use tun_rs::AsyncDevice;
 
-use crate::{VpnBehaviour, VpnBehaviourEvent, config::Config};
+use crate::{VpnrBehaviour, VpnrBehaviourEvent, config::Config};
 
 pub(crate) fn build(
     keypair: &Keypair,
     _vpn_interface: AsyncDevice,
     config: Config,
-) -> Result<Swarm<VpnBehaviour>, Box<dyn Error>> {
+) -> Result<Swarm<VpnrBehaviour>, Box<dyn Error>> {
     let swarm = libp2p::SwarmBuilder::with_existing_identity(keypair.clone())
         .with_tokio()
         .with_tcp(
@@ -26,7 +26,7 @@ pub(crate) fn build(
         )?
         .with_quic()
         .with_dns()?
-        .with_behaviour(|keypair| VpnBehaviour {
+        .with_behaviour(|keypair| VpnrBehaviour {
             blocked_peers: allow_block_list::Behaviour::default(),
             connection_limits: connection_limits::Behaviour::new(config.connection_limits.into()),
             memory_limits: memory_connection_limits::Behaviour::with_max_bytes(config.memory_limit),
@@ -111,13 +111,13 @@ pub(crate) fn build(
     Ok(swarm)
 }
 
-pub async fn run(mut swarm: Swarm<VpnBehaviour>) -> Result<(), Box<dyn Error>> {
+pub async fn run(mut swarm: Swarm<VpnrBehaviour>) -> Result<(), Box<dyn Error>> {
     // Kick it off
     loop {
         tokio::select! {
             event = swarm.select_next_some() => match event {
 
-                SwarmEvent::Behaviour(VpnBehaviourEvent::Identify(identify::Event::Received { connection_id, peer_id, info })) => {
+                SwarmEvent::Behaviour(VpnrBehaviourEvent::Identify(identify::Event::Received { connection_id, peer_id, info })) => {
                     trace!("identify::Event::Received, received, {},{}, {:?}", connection_id, peer_id, info);
                     for address in info.listen_addrs {
                         trace!("{}", address);
@@ -129,14 +129,14 @@ pub async fn run(mut swarm: Swarm<VpnBehaviour>) -> Result<(), Box<dyn Error>> {
                     }
                 }
 
-                SwarmEvent::Behaviour(VpnBehaviourEvent::Mdns(mdns::Event::Discovered(peers))) => {
+                SwarmEvent::Behaviour(VpnrBehaviourEvent::Mdns(mdns::Event::Discovered(peers))) => {
                     trace!("mdns::Event::Discovered, address: {:?}", peers);
                     for (peer_id, peer_addr) in peers {
                         swarm.add_peer_address(peer_id, peer_addr);
                     }
                 }
 
-                SwarmEvent::Behaviour(VpnBehaviourEvent::Upnp(upnp::Event::NewExternalAddr { local_addr, external_addr})) => {
+                SwarmEvent::Behaviour(VpnrBehaviourEvent::Upnp(upnp::Event::NewExternalAddr { local_addr, external_addr})) => {
                     trace!("upnp::Event::NewExternalAddr, local addr {}, new external address: {}", local_addr, external_addr);
                     // if swarm.behaviour_mut().kademlia.is_enabled() {
                     //     swarm.behaviour_mut().kademlia.as_mut().unwrap().add_address(&local_peer_id, address);
@@ -144,7 +144,7 @@ pub async fn run(mut swarm: Swarm<VpnBehaviour>) -> Result<(), Box<dyn Error>> {
                     swarm.add_external_address(external_addr);
                 }
 
-                SwarmEvent::Behaviour(VpnBehaviourEvent::Kademlia(kad::Event::OutboundQueryProgressed { id, result, stats, step })) => {
+                SwarmEvent::Behaviour(VpnrBehaviourEvent::Kademlia(kad::Event::OutboundQueryProgressed { id, result, stats, step })) => {
                     trace!("kad::Event::OutboundQueryProgressed, {:?}, {:?}, {:?}, {:?}", id, result, stats, step);
 
                     match result {
