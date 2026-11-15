@@ -31,13 +31,11 @@ use crate::config::Config;
 mod cli;
 pub(crate) mod config;
 mod swarm;
-mod vpn;
 
 #[derive(NetworkBehaviour)]
 struct VpnBehaviour {
     identify: identify::Behaviour,
     ping: ping::Behaviour,
-    vpn: vpn::behaviour::Behaviour,
     dcutr: Toggle<dcutr::Behaviour>,
     autonat: Toggle<autonat::Behaviour>,
     blocked_peers: allow_block_list::Behaviour<BlockedPeers>,
